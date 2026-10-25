@@ -1,0 +1,195 @@
+{
+  "startDate": "2026-10-26",
+  "note": "Week 1 starts on startDate (a Monday). Each week = one POC. Mon-Sat = one real milestone + one commit per day. Sunday = weekly review commit (DEVLOG + learnings).",
+  "dayLabels": [
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat",
+    "Sun"
+  ],
+  "weeks": [
+    {
+      "id": "003",
+      "slug": "flutter-offline-todo",
+      "stack": "Flutter",
+      "title": "Offline-first task app (Riverpod + Hive)",
+      "init": "flutter create --org dev.poc --project-name offline_todo .",
+      "days": [
+        "Flutter create, folder structure (data/domain/ui), add riverpod + hive",
+        "Task model + Hive adapter + repository with CRUD",
+        "Riverpod providers + list/add/complete UI",
+        "Unit tests for repository + widget test for add flow",
+        "Fake sync service with pending-changes queue and retry",
+        "README with architecture diagram, screenshots, trade-offs"
+      ]
+    },
+    {
+      "id": "004",
+      "slug": "nextjs-listings-isr",
+      "stack": "React / Next.js",
+      "title": "Listings page with App Router, ISR and Server Actions",
+      "init": "yarn create next-app . --ts --eslint --app --src-dir --use-yarn",
+      "days": [
+        "Create-next-app, mock listings JSON data source",
+        "/listings server component with filters via searchParams",
+        "/listings/[id] with generateStaticParams + revalidate (ISR)",
+        "'save listing' Server Action with optimistic UI (useOptimistic)",
+        "Next/image, loading.tsx skeletons, Lighthouse before/after",
+        "README on SSR vs SSG vs ISR decisions with numbers"
+      ]
+    },
+    {
+      "id": "005",
+      "slug": "node-idempotency-outbox",
+      "stack": "Node.js",
+      "title": "Idempotency keys + transactional outbox for payments-style APIs",
+      "init": "yarn init -y",
+      "days": [
+        "Express + sqlite (better-sqlite3) project setup",
+        "Idempotency-Key middleware storing request hash + response",
+        "Outbox table written in same transaction as order insert",
+        "Outbox relay worker with at-least-once delivery + backoff",
+        "Concurrent duplicate requests return identical response",
+        "README with sequence diagram and failure scenarios"
+      ]
+    },
+    {
+      "id": "006",
+      "slug": "rn-infinite-feed",
+      "stack": "React Native",
+      "title": "Infinite feed with FlashList, pagination and optimistic likes",
+      "init": "yarn create expo-app . --template blank-typescript",
+      "days": [
+        "Expo app, mock paginated API (cursor based)",
+        "FlashList feed with cursor pagination + pull to refresh",
+        "Optimistic like/unlike with rollback on failure (TanStack Query)",
+        "Memoized rows, getItemType, measure with Perf Monitor",
+        "Jest + RNTL tests for pagination and rollback",
+        "README with FlatList vs FlashList comparison and screen recording"
+      ]
+    },
+    {
+      "id": "007",
+      "slug": "ai-rag-docs",
+      "stack": "AI / LLM",
+      "title": "RAG over markdown docs with citations",
+      "init": "yarn init -y",
+      "days": [
+        "Project setup, sample docs folder",
+        "Markdown chunker (heading aware) + chunk metadata",
+        "Embeddings + in-memory cosine search (or sqlite-vec)",
+        "Answer endpoint that cites chunk sources, refuses if no match",
+        "Eval set of 10 Q&A pairs, report hit rate",
+        "README on chunk size, top-k and hallucination guardrails"
+      ]
+    },
+    {
+      "id": "008",
+      "slug": "flutter-bloc-auth",
+      "stack": "Flutter",
+      "title": "BLoC auth flow with token refresh interceptor (Dio)",
+      "init": "flutter create --org dev.poc --project-name bloc_auth .",
+      "days": [
+        "Flutter create, add flutter_bloc, dio, secure storage",
+        "AuthBloc states/events + login screen",
+        "Dio interceptor that refreshes token once and replays queued requests",
+        "Route guard + auto logout on refresh failure",
+        "Bloc_test for AuthBloc + interceptor unit test with mock server",
+        "README with state diagram and race-condition notes"
+      ]
+    },
+    {
+      "id": "009",
+      "slug": "node-job-queue",
+      "stack": "Node.js",
+      "title": "Background jobs with BullMQ: retries, DLQ, rate limit",
+      "init": "yarn init -y",
+      "days": [
+        "Docker-compose redis + bullmq setup",
+        "Producer API + worker for 'send-email' job",
+        "Exponential retries + dead-letter queue + failure reasons",
+        "Per-queue rate limit + graceful shutdown on SIGTERM",
+        "Integration test for retry then DLQ path",
+        "README with queue design and monitoring ideas"
+      ]
+    },
+    {
+      "id": "010",
+      "slug": "react-big-table",
+      "stack": "React / Next.js",
+      "title": "100k-row table: virtualization + Web Worker CSV parsing",
+      "init": "yarn create vite . --template react-ts",
+      "days": [
+        "Vite react-ts setup, generate 100k-row CSV fixture",
+        "Parse CSV in a Web Worker, progress events to UI",
+        "Virtualized table (TanStack Virtual) with sticky header",
+        "Sort + filter off main thread",
+        "Measure main-thread blocking before/after, record numbers",
+        "README with profiler screenshots"
+      ]
+    },
+    {
+      "id": "011",
+      "slug": "rn-offline-sync",
+      "stack": "React Native",
+      "title": "Offline mutation queue with NetInfo + MMKV",
+      "init": "yarn create expo-app . --template blank-typescript",
+      "days": [
+        "Expo app, add netinfo + mmkv",
+        "Persistent mutation queue stored in MMKV",
+        "Replay on reconnect with ordering + conflict detection",
+        "Offline banner + per-item sync status UI",
+        "Queue unit tests (ordering, retry, dedupe)",
+        "README on conflict strategies (LWW vs server wins)"
+      ]
+    },
+    {
+      "id": "012",
+      "slug": "ai-tool-calling-agent",
+      "stack": "AI / LLM",
+      "title": "Tool-calling agent over a small REST API",
+      "init": "yarn init -y",
+      "days": [
+        "Mock REST API (search, get, create) with express",
+        "Tool definitions + agent loop with max-steps guard",
+        "Input validation on tool args, human confirm for write tools",
+        "Trace log of each step (tokens, latency, tool calls)",
+        "Scripted scenarios with mocked model responses",
+        "README on guardrails and cost control"
+      ]
+    },
+    {
+      "id": "013",
+      "slug": "flutter-custom-charts",
+      "stack": "Flutter",
+      "title": "CustomPainter charts with animations + golden tests",
+      "init": "flutter create --org dev.poc --project-name custom_charts .",
+      "days": [
+        "Flutter create, sample time-series data",
+        "Line chart with CustomPainter, axes and labels",
+        "Animated transitions + touch tooltip",
+        "Bar chart variant sharing a scale abstraction",
+        "Golden tests for both charts",
+        "README with GIFs and performance notes"
+      ]
+    },
+    {
+      "id": "014",
+      "slug": "fullstack-sse-notifications",
+      "stack": "Node.js + Next.js",
+      "title": "Realtime notifications with Server-Sent Events",
+      "init": "mkdir api web",
+      "days": [
+        "Node api + next web skeleton",
+        "SSE endpoint with auth, heartbeat and Last-Event-ID resume",
+        "Next client hook useNotifications with reconnect",
+        "Fan-out via Redis pub/sub for multi-instance",
+        "Reconnect + missed-event replay test",
+        "README on SSE vs WebSocket vs polling"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "daily-poc-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One small, real POC per week across Node.js, React/Next.js, React Native, Flutter and AI, shipped in daily milestones",
+  "scripts": {
+    "today": "node scripts/lab.js today",
+    "start-week": "node scripts/lab.js start",
+    "ship": "node scripts/lab.js ship",
+    "index": "node scripts/lab.js index",
+    "check": "node scripts/lab.js check",
+    "test": "cd pocs/001-node-rate-limiter && yarn test && cd ../002-ai-diff-reviewer && yarn test"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}

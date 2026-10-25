@@ -1,0 +1,13 @@
+node_modules/
+.DS_Store
+.env
+*.log
+# Flutter / RN build output
+build/
+.dart_tool/
+ios/Pods/
+android/.gradle/
+.expo/
+.next/
+.autoship-ready
+.autoship.log
