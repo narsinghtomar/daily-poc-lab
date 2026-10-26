@@ -11,7 +11,7 @@ Each POC answers one engineering question, is time-boxed to a week, and ships in
 |---|---|---|---|
 | 001 | [Node.js rate limiter](pocs/001-node-rate-limiter) | Node.js | Done |
 | 002 | [AI diff reviewer](pocs/002-ai-diff-reviewer) | Node.js + AI | Done |
-| 003 | Offline-first task app (Riverpod + Hive) | Flutter | Planned (week 1) |
+| 003 | [Offline-first task app (Riverpod + Hive)](pocs/003-flutter-offline-todo) | Flutter | In progress |
 | 004 | Listings page with App Router, ISR and Server Actions | React / Next.js | Planned (week 2) |
 | 005 | Idempotency keys + transactional outbox for payments-style APIs | Node.js | Planned (week 3) |
 | 006 | Infinite feed with FlashList, pagination and optimistic likes | React Native | Planned (week 4) |
