@@ -8,6 +8,7 @@ Mobile users lose connectivity constantly, and apps that block on the network fe
 ## What this POC shows
 - Layered structure: `lib/data` (storage), `lib/domain` (entities), `lib/ui` (widgets)
 - Riverpod for state and Hive for local persistence, initialised before `runApp`
+- Immutable `Task` entity, a hand-written Hive `TypeAdapter` (no build_runner) and a `TaskRepository` with add/update/delete/list/watch
 
 ## Run
 ```bash
@@ -28,7 +29,7 @@ flutter run
 
 ## Daily plan
 - [x] Mon: Flutter create, folder structure (data/domain/ui), add riverpod + hive
-- [ ] Tue: Task model + Hive adapter + repository with CRUD
+- [x] Tue: Task model + Hive adapter + repository with CRUD
 - [ ] Wed: Riverpod providers + list/add/complete UI
 - [ ] Thu: Unit tests for repository + widget test for add flow
 - [ ] Fri: Fake sync service with pending-changes queue and retry
