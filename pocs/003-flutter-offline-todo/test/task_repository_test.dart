@@ -56,4 +56,46 @@ void main() {
     await repo.delete(a.id);
     expect(repo.getAll().map((t) => t.title), ['b']);
   });
+
+  test('update rejects blank titles and leaves the task untouched', () async {
+    final task = await repo.add('Write');
+    expect(() => repo.update(task.id, title: '  '), throwsArgumentError);
+    expect(repo.getById(task.id), task);
+  });
+
+  test('update trims the new title and keeps completion state', () async {
+    final task = await repo.add('Write');
+    await repo.update(task.id, completed: true);
+    final renamed = await repo.update(task.id, title: ' Draft ');
+    expect(renamed!.title, 'Draft');
+    expect(renamed.completed, isTrue);
+    expect(renamed.createdAt, task.createdAt);
+  });
+
+  test('getAll returns tasks oldest first', () async {
+    await repo.add('first');
+    await repo.add('second');
+    await repo.add('third');
+    expect(repo.getAll().map((t) => t.title), ['first', 'second', 'third']);
+  });
+
+  test('tasks survive closing and reopening the box', () async {
+    final task = await repo.add('Persist me');
+    await Hive.close();
+    final reopened = await Hive.openBox<Task>(TaskRepository.boxName);
+    expect(TaskRepository(reopened).getById(task.id), task);
+  });
+
+  test('watchAll emits the fresh list after each change', () async {
+    final emitted = expectLater(
+      repo.watchAll().map((tasks) => tasks.map((t) => t.title).toList()),
+      emitsInOrder([
+        ['a'],
+        ['a', 'b'],
+      ]),
+    );
+    await repo.add('a');
+    await repo.add('b');
+    await emitted;
+  });
 }

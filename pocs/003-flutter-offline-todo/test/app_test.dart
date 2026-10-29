@@ -87,4 +87,64 @@ void main() {
 
     expect(repo.getAll().single.completed, isTrue);
   });
+
+  testWidgets('cancelling the dialog adds nothing', (tester) async {
+    final repo = FakeRepository();
+    await tester.pumpWidget(_app(repo));
+    await tester.pump();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Never saved');
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(repo.getAll(), isEmpty);
+    expect(find.text('No tasks yet'), findsOneWidget);
+  });
+
+  testWidgets('a blank title is ignored', (tester) async {
+    final repo = FakeRepository();
+    await tester.pumpWidget(_app(repo));
+    await tester.pump();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+
+    expect(repo.getAll(), isEmpty);
+    expect(find.text('No tasks yet'), findsOneWidget);
+  });
+
+  testWidgets('submitting from the keyboard adds the task', (tester) async {
+    final repo = FakeRepository();
+    await tester.pumpWidget(_app(repo));
+    await tester.pump();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Call mum');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Call mum'), findsOneWidget);
+    expect(repo.getAll().single.title, 'Call mum');
+  });
+
+  testWidgets('completed tasks can be unchecked again', (tester) async {
+    final repo = FakeRepository();
+    await repo.add('Water plants');
+    await tester.pumpWidget(_app(repo));
+    await tester.pump();
+
+    await tester.tap(find.byType(CheckboxListTile));
+    await tester.pumpAndSettle();
+    expect(repo.getAll().single.completed, isTrue);
+
+    await tester.tap(find.byType(CheckboxListTile));
+    await tester.pumpAndSettle();
+    expect(repo.getAll().single.completed, isFalse);
+  });
 }

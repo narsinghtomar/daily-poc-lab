@@ -16,3 +16,8 @@
 - Home page now lists tasks, adds through a dialog and toggles completion with a checkbox; widget tests use an in-memory fake repository.
 - Flutter SDK is not available here, so the tests have not been run yet.
 - 2026-10-28 (W1 Wed): Add Riverpod providers and list, add and complete UI for offline todo
+
+## Thu
+- Extended repository tests (blank-title update, trimming, ordering, persistence after reopening the box, change stream) and widget tests for the add flow (cancel, blank title, keyboard submit, uncheck).
+- Flutter SDK is not available here, so the suite has not been run yet; run `flutter test` after `flutter create .`.
+- 2026-10-29 (W1 Thu): Add repository and add-flow widget tests for offline todo
