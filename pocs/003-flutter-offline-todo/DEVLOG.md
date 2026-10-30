@@ -21,3 +21,10 @@
 - Extended repository tests (blank-title update, trimming, ordering, persistence after reopening the box, change stream) and widget tests for the add flow (cancel, blank title, keyboard submit, uncheck).
 - Flutter SDK is not available here, so the suite has not been run yet; run `flutter test` after `flutter create .`.
 - 2026-10-29 (W1 Thu): Add repository and add-flow widget tests for offline todo
+
+## Fri
+- Added `lib/sync`: coalescing pending-changes queue, `SyncService` interface with a fake server, and a `SyncEngine` with exponential-backoff retry that stops at the first change that keeps failing.
+- Sync tests are pure Dart with an injected delay, so backoff is asserted without waiting. Flutter SDK is not available here, so they have not been run yet.
+- Queue is in memory for now; persisting it is listed under production work.
+- 2026-10-30 (W1 Fri): Add fake sync service with pending-changes queue and retry
+- 2026-10-30 (W1 Fri): Add fake sync service with pending-changes queue and retry for offline todo
