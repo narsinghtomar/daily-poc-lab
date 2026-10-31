@@ -28,3 +28,4 @@
 - Queue is in memory for now; persisting it is listed under production work.
 - 2026-10-30 (W1 Fri): Add fake sync service with pending-changes queue and retry
 - 2026-10-30 (W1 Fri): Add fake sync service with pending-changes queue and retry for offline todo
+- 2026-10-31 (W1 Sat): Add architecture diagram, screens and trade-offs to offline todo README

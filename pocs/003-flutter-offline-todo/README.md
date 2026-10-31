@@ -22,6 +22,49 @@ flutter test
 flutter run
 ```
 
+## Architecture
+```
+ ┌──────────────┐  watch()   ┌────────────────┐   ┌─────────────────────┐
+ │ ui/HomePage  │◄───────────│ tasksProvider  │◄──│ TaskRepository      │
+ │ (widgets)    │──actions──►│ (Riverpod)     │──►│ add/update/delete   │
+ └──────────────┘            └────────────────┘   └──────────┬──────────┘
+                                                             │ reads/writes
+                                                   ┌─────────▼─────────┐
+                                                   │ Hive box (source  │
+                                                   │ of truth, on disk)│
+                                                   └─────────┬─────────┘
+                                          enqueue(change)    │
+ ┌──────────────┐  drain + retry   ┌───────────┐             │
+ │ SyncService  │◄─────────────────│ SyncEngine│◄── SyncQueue┘
+ │ (fake server)│                  │ (backoff) │   (1 change/task)
+ └──────────────┘                  └───────────┘
+```
+Data flows one way: the UI reads a stream from the repository and never touches Hive or the network. Writes hit the local box first; sync is a separate background concern.
+
+## Screens
+No device or emulator was available when this was written, so there are no screenshots yet. Add them to `docs/` after `flutter run`. The layout is:
+```
+┌──────────────────────┐
+│ Tasks                │
+├──────────────────────┤
+│ ☐ Buy milk           │
+│ ☑ Pay rent           │
+│ ☐ Call the bank      │
+│                  (+) │
+└──────────────────────┘
+```
+`+` opens a dialog with a title field; the checkbox toggles completion.
+
+## Trade-offs
+| Decision | Why | Cost |
+|---|---|---|
+| Hive over SQLite | Simple typed box, no schema or SQL for a flat entity | No queries or joins; migrations are manual |
+| Hand-written `TypeAdapter` | No build_runner step, index-based fields tolerate added fields | Boilerplate to maintain by hand |
+| In-memory sync queue | Keeps the engine pure Dart and trivially testable | Pending changes are lost on restart |
+| One pending change per task | Fewer requests, server sees only the latest state | Intermediate history is dropped |
+| Stop at first exhausted change | Preserves per-task ordering | One bad change blocks the ones behind it |
+| Fake sync service | Exercises retry and failure paths with no backend | Real conflict handling is not covered |
+
 ## What I'd do in production
 - Add a Hive encryption key from secure storage
 - Persist the pending queue in Hive so it survives an app restart, and trigger `flush` on connectivity changes
@@ -38,5 +81,5 @@ flutter run
 - [x] Wed: Riverpod providers + list/add/complete UI
 - [x] Thu: Unit tests for repository + widget test for add flow
 - [x] Fri: Fake sync service with pending-changes queue and retry
-- [ ] Sat: README with architecture diagram, screenshots, trade-offs
+- [x] Sat: README with architecture diagram, screenshots, trade-offs
 - [ ] Sun: weekly review in DEVLOG.md
