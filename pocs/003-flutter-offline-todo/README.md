@@ -1,6 +1,6 @@
 # 003 · Offline-first task app (Riverpod + Hive)
 
-**Stack:** Flutter · **Week:** 1 · **Status:** in progress
+**Stack:** Flutter · **Week:** 1 · **Status:** done
 
 ## Problem
 Mobile users lose connectivity constantly, and apps that block on the network feel broken. This POC keeps the local database as the source of truth so tasks can be created and completed offline and synced later.
@@ -82,4 +82,4 @@ No device or emulator was available when this was written, so there are no scree
 - [x] Thu: Unit tests for repository + widget test for add flow
 - [x] Fri: Fake sync service with pending-changes queue and retry
 - [x] Sat: README with architecture diagram, screenshots, trade-offs
-- [ ] Sun: weekly review in DEVLOG.md
+- [x] Sun: weekly review in DEVLOG.md
