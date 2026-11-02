@@ -1,0 +1,8 @@
+[
+  { "id": "l-101", "title": "Sunny 2BHK near metro", "city": "Pune", "type": "apartment", "price": 8500000, "bedrooms": 2, "area": 980, "listedAt": "2026-10-01" },
+  { "id": "l-102", "title": "Garden villa with pool", "city": "Goa", "type": "villa", "price": 24500000, "bedrooms": 4, "area": 3200, "listedAt": "2026-09-18" },
+  { "id": "l-103", "title": "Compact studio, city centre", "city": "Mumbai", "type": "studio", "price": 6200000, "bedrooms": 1, "area": 420, "listedAt": "2026-10-12" },
+  { "id": "l-104", "title": "Family 3BHK in gated society", "city": "Bengaluru", "type": "apartment", "price": 13500000, "bedrooms": 3, "area": 1650, "listedAt": "2026-08-30" },
+  { "id": "l-105", "title": "Lake-facing row house", "city": "Pune", "type": "house", "price": 17200000, "bedrooms": 3, "area": 2100, "listedAt": "2026-10-20" },
+  { "id": "l-106", "title": "Penthouse with terrace", "city": "Mumbai", "type": "apartment", "price": 38000000, "bedrooms": 4, "area": 2800, "listedAt": "2026-07-05" }
+]
