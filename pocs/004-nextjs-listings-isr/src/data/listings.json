@@ -1,0 +1,10 @@
+[
+  { "id": "l-001", "title": "Sunny loft near the park", "city": "Berlin", "type": "apartment", "price": 1450, "bedrooms": 2 },
+  { "id": "l-002", "title": "Compact studio by the station", "city": "Berlin", "type": "studio", "price": 780, "bedrooms": 0 },
+  { "id": "l-003", "title": "Family house with garden", "city": "Hamburg", "type": "house", "price": 2600, "bedrooms": 4 },
+  { "id": "l-004", "title": "Canal-side apartment", "city": "Amsterdam", "type": "apartment", "price": 1900, "bedrooms": 2 },
+  { "id": "l-005", "title": "Bright studio in the old town", "city": "Amsterdam", "type": "studio", "price": 1100, "bedrooms": 0 },
+  { "id": "l-006", "title": "Townhouse with roof terrace", "city": "Hamburg", "type": "house", "price": 3100, "bedrooms": 3 },
+  { "id": "l-007", "title": "Two-bed flat, quiet street", "city": "Berlin", "type": "apartment", "price": 1250, "bedrooms": 2 },
+  { "id": "l-008", "title": "Modern one-bed downtown", "city": "Amsterdam", "type": "apartment", "price": 1600, "bedrooms": 1 }
+]

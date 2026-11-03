@@ -1,0 +1,8 @@
+.main { max-width: 56rem; margin: 0 auto; padding: 2rem 1rem; }
+.filters { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; margin-bottom: 1.5rem; }
+.filters label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.875rem; }
+.filters select, .filters input { padding: 0.4rem; min-width: 8rem; }
+.grid { list-style: none; padding: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+.card { border: 1px solid #8884; border-radius: 0.5rem; padding: 1rem; }
+.card h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
+.price { font-weight: 600; }
