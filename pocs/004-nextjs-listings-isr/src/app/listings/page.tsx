@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getListings } from "@/lib/listings";
 import { applyFilters, parseFilters } from "@/lib/filters";
 import styles from "./listings.module.css";
@@ -55,7 +56,7 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
         <ul className={styles.grid}>
           {results.map((l) => (
             <li key={l.id} className={styles.card}>
-              <h2>{l.title}</h2>
+              <h2><Link href={`/listings/${l.id}`}>{l.title}</Link></h2>
               <p>{l.city} · {l.type} · {l.bedrooms === 0 ? "studio" : `${l.bedrooms} bed`}</p>
               <p className={styles.price}>€{l.price.toLocaleString("en-US")}/mo</p>
             </li>

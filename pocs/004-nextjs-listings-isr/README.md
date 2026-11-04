@@ -10,6 +10,7 @@ Property search needs shareable, bookmarkable filter state and fast first paint.
 - Filters (city, type, min bedrooms, max price) live in the URL via a plain GET form, so it works without client JS
 - Untrusted query params are parsed into a typed filter object; invalid values are dropped instead of throwing
 - Filtering logic is a pure function covered by unit tests
+- `/listings/[id]` is pre-rendered with `generateStaticParams` and regenerated in the background with `revalidate = 60` (ISR); unknown ids return a 404 via `notFound()`
 
 ## Run
 ```bash
@@ -28,12 +29,14 @@ yarn build && yarn start
 - Using `searchParams` makes the route dynamic (rendered per request); static or ISR pages cannot read it
 - URL as the source of truth: shareable, back-button friendly, no state sync bugs
 - Validate and normalise all external input at the boundary
+- ISR: serve the cached HTML instantly, re-render at most once per `revalidate` window; the footer timestamp on the detail page shows when it was generated (check with `yarn build && yarn start`)
+- `dynamicParams = true` lets ids missing at build time render on first request and then get cached
 - Cache Components is switched off in `next.config.ts` so the classic `revalidate` ISR model can be demonstrated on the detail page later in the week
 
 ## Daily plan
 - [ ] Mon: Create-next-app, mock listings JSON data source
 - [x] Tue: /listings server component with filters via searchParams
-- [ ] Wed: /listings/[id] with generateStaticParams + revalidate (ISR)
+- [x] Wed: /listings/[id] with generateStaticParams + revalidate (ISR)
 - [ ] Thu: 'save listing' Server Action with optimistic UI (useOptimistic)
 - [ ] Fri: Next/image, loading.tsx skeletons, Lighthouse before/after
 - [ ] Sat: README on SSR vs SSG vs ISR decisions with numbers
