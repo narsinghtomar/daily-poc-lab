@@ -45,7 +45,7 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
           <input type="number" name="maxPrice" min={0} step={50} defaultValue={filters.maxPrice} />
         </label>
         <button type="submit">Apply</button>
-        <a href="/listings">Reset</a>
+        <Link href="/listings">Reset</Link>
       </form>
 
       <p aria-live="polite">{results.length} of {all.length} listings</p>
