@@ -6,3 +6,4 @@
 .card { border: 1px solid #8884; border-radius: 0.5rem; padding: 1rem; }
 .card h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
 .price { font-weight: 600; }
+.save { margin-top: 0.5rem; padding: 0.3rem 0.7rem; cursor: pointer; }

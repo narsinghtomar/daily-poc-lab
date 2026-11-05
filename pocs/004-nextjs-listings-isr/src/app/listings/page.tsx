@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { getListings } from "@/lib/listings";
 import { applyFilters, parseFilters } from "@/lib/filters";
+import { SAVED_COOKIE, parseSaved } from "@/lib/saved";
+import { SaveButton } from "./save-button";
 import styles from "./listings.module.css";
 
 export const metadata: Metadata = { title: "Listings" };
@@ -11,6 +14,7 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
   const all = await getListings();
   const cities = [...new Set(all.map((l) => l.city))].sort();
   const results = applyFilters(all, filters);
+  const saved = new Set(parseSaved((await cookies()).get(SAVED_COOKIE)?.value));
 
   return (
     <main className={styles.main}>
@@ -59,6 +63,7 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
               <h2><Link href={`/listings/${l.id}`}>{l.title}</Link></h2>
               <p>{l.city} · {l.type} · {l.bedrooms === 0 ? "studio" : `${l.bedrooms} bed`}</p>
               <p className={styles.price}>€{l.price.toLocaleString("en-US")}/mo</p>
+              <SaveButton id={l.id} saved={saved.has(l.id)} />
             </li>
           ))}
         </ul>

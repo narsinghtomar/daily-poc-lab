@@ -13,3 +13,9 @@
 - Build output shows the 8 detail routes as SSG; a render timestamp makes regeneration visible
 - JSON imports need an import attribute under Node's type stripping, so the id test reads the file directly
 - 2026-11-04 (W2 Wed): Add listing detail page with generateStaticParams and ISR revalidate
+
+## Thu
+- Added a save/unsave Server Action with optimistic UI via `useOptimistic` on the listing cards
+- Saved ids live in a cookie so there is no database yet; pure helpers for parsing and toggling are unit tested
+- The action rejects unknown ids because Server Actions are directly callable
+- 2026-11-05 (W2 Thu): Add save listing Server Action with optimistic UI
