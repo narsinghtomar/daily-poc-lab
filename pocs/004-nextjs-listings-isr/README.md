@@ -13,6 +13,21 @@ Property search needs shareable, bookmarkable filter state and fast first paint.
 - `/listings/[id]` is pre-rendered with `generateStaticParams` and regenerated in the background with `revalidate = 60` (ISR); unknown ids return a 404 via `notFound()`
 - Each listing card has a Save button backed by a Server Action (`setListingSaved`); `useOptimistic` flips the star instantly and React rolls it back if the action throws
 - Saved ids are stored per visitor in an httpOnly cookie, parsed defensively and capped; the action validates the id against real listings before writing
+- Cards and the detail page use `next/image` with statically imported photos: width/height and a blur placeholder come from the import, `sizes` lets the browser pick a right-sized variant, the first three cards use `priority` and the rest lazy-load
+- `loading.tsx` for `/listings` and `/listings/[id]` shows skeletons that reuse the real grid and 3:2 aspect ratio, so content swaps in without layout shift
+- Set `LISTINGS_LATENCY_MS=800` to simulate database latency and see the skeletons in dev
+
+## Lighthouse (desktop preset, performance, local `yarn build && yarn start`, median of 3)
+| | Score | LCP | CLS | Transferred |
+|---|---|---|---|---|
+| Before (text-only cards) | 100 | 0.54 s | 0 | 215 KB |
+| After (`next/image`, skeletons) | 100 | 0.54 s | 0 | 257 KB |
+
+Honest reading: the "before" page had no images, so this shows that adding eight-ish photos costs about 40 KB with no CLS and no LCP regression, not a speed-up. Localhost with a tiny dataset also saturates the score; a throttled mobile run against real photos is the meaningful comparison. Reproduce with:
+```bash
+yarn global add lighthouse
+lighthouse http://localhost:3000/listings --only-categories=performance --preset=desktop --chrome-flags="--headless" --view
+```
 
 ## Run
 ```bash
@@ -20,6 +35,7 @@ yarn install
 yarn dev        # http://localhost:3000/listings?city=Berlin&type=apartment&maxPrice=1500
 yarn test       # unit tests for filter parsing and matching
 yarn build && yarn start
+node scripts/generate-images.mjs   # regenerates the placeholder photos in src/assets
 ```
 
 ## What I'd do in production
@@ -39,11 +55,16 @@ yarn build && yarn start
 - Cookies make `/listings` dynamic, which it already was because of `searchParams`; the ISR detail page deliberately does not read them
 - Cache Components is switched off in `next.config.ts` so the classic `revalidate` ISR model can be demonstrated on the detail page later in the week
 
+- `next/image` serves resized AVIF/WebP-capable variants from `/_next/image`; static imports avoid specifying dimensions by hand and prevent CLS
+- `priority` is only for the LCP candidates; marking everything priority defeats lazy-loading
+- `loading.tsx` is a Suspense boundary around the page, so the shell streams first; skeletons should match final dimensions
+- Lighthouse on localhost is a smoke test; use throttled mobile runs and field data (CrUX) for real decisions
+
 ## Daily plan
 - [ ] Mon: Create-next-app, mock listings JSON data source
 - [x] Tue: /listings server component with filters via searchParams
 - [x] Wed: /listings/[id] with generateStaticParams + revalidate (ISR)
 - [x] Thu: 'save listing' Server Action with optimistic UI (useOptimistic)
-- [ ] Fri: Next/image, loading.tsx skeletons, Lighthouse before/after
+- [x] Fri: Next/image, loading.tsx skeletons, Lighthouse before/after
 - [ ] Sat: README on SSR vs SSG vs ISR decisions with numbers
 - [ ] Sun: weekly review in DEVLOG.md

@@ -7,3 +7,14 @@
 .card h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
 .price { font-weight: 600; }
 .save { margin-top: 0.5rem; padding: 0.3rem 0.7rem; cursor: pointer; }
+.photo { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 0.35rem; margin-bottom: 0.75rem; }
+.hero { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 0.5rem; margin: 0.5rem 0 1rem; }
+
+/* Skeletons mirror the real layout (same grid, same aspect ratio) to avoid layout shift. */
+.skeleton { background: linear-gradient(90deg, #8882 25%, #8884 50%, #8882 75%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; border-radius: 0.35rem; }
+.skelPhoto { aspect-ratio: 3 / 2; margin-bottom: 0.75rem; }
+.skelLine { height: 1rem; margin-bottom: 0.5rem; }
+.skelShort { width: 55%; }
+.skelTitle { height: 2rem; width: 60%; margin-bottom: 1rem; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }

@@ -19,3 +19,9 @@
 - Saved ids live in a cookie so there is no database yet; pure helpers for parsing and toggling are unit tested
 - The action rejects unknown ids because Server Actions are directly callable
 - 2026-11-05 (W2 Thu): Add save listing Server Action with optimistic UI
+
+## Fri
+- Added `next/image` with generated placeholder photos (zero-dependency PNG script) and `loading.tsx` skeletons for the list and detail routes
+- Lighthouse before/after was flat (100 both, CLS 0) because the baseline had no images; recorded that honestly in the README instead of claiming a win
+- Added an opt-in latency env var so skeletons can be seen locally
+- 2026-11-06 (W2 Fri): Add next/image photos and loading skeletons to Next.js listings POC

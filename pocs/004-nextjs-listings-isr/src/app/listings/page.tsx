@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getListings } from "@/lib/listings";
 import { applyFilters, parseFilters } from "@/lib/filters";
+import { photoFor } from "@/lib/photos";
 import { SAVED_COOKIE, parseSaved } from "@/lib/saved";
 import { SaveButton } from "./save-button";
 import styles from "./listings.module.css";
@@ -58,8 +60,17 @@ export default async function ListingsPage({ searchParams }: PageProps<"/listing
         <p>No listings match these filters.</p>
       ) : (
         <ul className={styles.grid}>
-          {results.map((l) => (
+          {results.map((l, i) => (
             <li key={l.id} className={styles.card}>
+              <Image
+                src={photoFor(l.type)}
+                alt={`${l.title} in ${l.city}`}
+                placeholder="blur"
+                sizes="(min-width: 56rem) 17rem, (min-width: 36rem) 45vw, 100vw"
+                // The first row is above the fold: preload it, lazy-load the rest.
+                priority={i < 3}
+                className={styles.photo}
+              />
               <h2><Link href={`/listings/${l.id}`}>{l.title}</Link></h2>
               <p>{l.city} · {l.type} · {l.bedrooms === 0 ? "studio" : `${l.bedrooms} bed`}</p>
               <p className={styles.price}>€{l.price.toLocaleString("en-US")}/mo</p>

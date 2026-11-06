@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getListing, getListings } from "@/lib/listings";
+import { photoFor } from "@/lib/photos";
 import styles from "../listings.module.css";
 
 // ISR: the page is generated at build time and regenerated in the background
@@ -30,6 +32,14 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
     <main className={styles.main}>
       <p><Link href="/listings">← All listings</Link></p>
       <h1>{listing.title}</h1>
+      <Image
+        src={photoFor(listing.type)}
+        alt={`${listing.title} in ${listing.city}`}
+        placeholder="blur"
+        sizes="(min-width: 56rem) 54rem, 100vw"
+        priority
+        className={styles.hero}
+      />
       <p>
         {listing.city} · {listing.type} ·{" "}
         {listing.bedrooms === 0 ? "studio" : `${listing.bedrooms} bed`}
