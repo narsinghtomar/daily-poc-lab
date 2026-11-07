@@ -19,3 +19,10 @@
 - Saved ids live in a cookie so there is no database yet; pure helpers for parsing and toggling are unit tested
 - The action rejects unknown ids because Server Actions are directly callable
 - 2026-11-05 (W2 Thu): Add save listing Server Action with optimistic UI
+
+## Sat
+- Wrote the SSR vs SSG vs ISR decision section in the README with a route table, decision rules and reproduce steps
+- Measured p50/p95 over 50 requests per route on a production build; the numbers are localhost with mock data, so the README states what they do and do not show
+- Cache headers (`s-maxage=60, stale-while-revalidate`) on the detail page versus `no-store` on the list page back up the mode of each route
+- 2026-11-07 (W2 Sat): Document SSR vs SSG vs ISR decisions with measured numbers
+- 2026-11-07 (W2 Sat): Document SSR vs SSG vs ISR decisions with measured numbers
