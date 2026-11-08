@@ -1,6 +1,6 @@
 # 004 · Listings page with App Router, ISR and Server Actions
 
-**Stack:** React / Next.js · **Week:** 2 · **Status:** in progress
+**Stack:** React / Next.js · **Week:** 2 · **Status:** done
 
 ## Problem
 Property search needs shareable, bookmarkable filter state and fast first paint. Keeping filters in the URL and rendering on the server gives both without client-side state libraries.
@@ -85,4 +85,4 @@ curl -sI http://localhost:3111/listings/l-001 | grep -i -E "cache-control|x-next
 - [x] Thu: 'save listing' Server Action with optimistic UI (useOptimistic)
 - [ ] Fri: Next/image, loading.tsx skeletons, Lighthouse before/after
 - [x] Sat: README on SSR vs SSG vs ISR decisions with numbers
-- [ ] Sun: weekly review in DEVLOG.md
+- [x] Sun: weekly review in DEVLOG.md
