@@ -1,10 +1,12 @@
 'use strict';
 const crypto = require('node:crypto');
 const express = require('express');
+const { idempotency } = require('./idempotency');
 
 function createApp(db) {
   const app = express();
   app.use(express.json());
+  app.use(idempotency(db));
 
   app.get('/health', (_req, res) => {
     const { ok } = db.prepare('SELECT 1 AS ok').get();
