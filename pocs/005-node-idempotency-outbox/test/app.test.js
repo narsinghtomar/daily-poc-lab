@@ -83,3 +83,16 @@ test('requests without a key are not deduplicated', async () => {
     assert.strictEqual(db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 2);
   } finally { server.close(); db.close(); }
 });
+
+test('POST /orders and an idempotent retry produce exactly one outbox event', async () => {
+  const db = openDb(':memory:');
+  const server = createApp(db).listen(0);
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const first = await post(base, { amount_cents: 700, currency: 'EUR' }, 'k4');
+    await post(base, { amount_cents: 700, currency: 'EUR' }, 'k4');
+    const { id } = await first.json();
+    const events = db.prepare('SELECT aggregate_id FROM outbox').all();
+    assert.deepStrictEqual(events, [{ aggregate_id: id }]);
+  } finally { server.close(); db.close(); }
+});
