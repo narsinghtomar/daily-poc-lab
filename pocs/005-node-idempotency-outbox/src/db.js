@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
 
 -- Transactional outbox: events are written in the same transaction as the
 -- state change, then delivered later by a relay. published_at stays NULL
--- until delivery succeeds.
+-- until delivery succeeds; failed attempts push next_attempt_at forward.
 CREATE TABLE IF NOT EXISTS outbox (
   id             TEXT PRIMARY KEY,
   aggregate_type TEXT NOT NULL,
@@ -27,12 +27,14 @@ CREATE TABLE IF NOT EXISTS outbox (
   event_type     TEXT NOT NULL,
   payload        TEXT NOT NULL,
   attempts       INTEGER NOT NULL DEFAULT 0,
+  next_attempt_at INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
+  last_error     TEXT,
   created_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   published_at   TEXT
 );
 
 CREATE INDEX IF NOT EXISTS outbox_unpublished
-  ON outbox (created_at) WHERE published_at IS NULL;
+  ON outbox (next_attempt_at, created_at) WHERE published_at IS NULL;
 `;
 
 function openDb(file = process.env.DB_FILE || ':memory:') {
