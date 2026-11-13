@@ -20,3 +20,9 @@
 - Added the outbox relay worker: batched polling of due events, mark published only after publish resolves, capped exponential backoff with full jitter on failure, graceful stop. Wired it into the server with a console publisher.
 - Learned: keep the `published_at` update outside the publish try/catch; otherwise a database error after a successful publish gets recorded as a publish failure.
 - 2026-11-12 (W3 Thu): Add outbox relay worker with at-least-once delivery and backoff
+
+## Fri
+- Made the Idempotency-Key middleware safe under concurrency: atomic claim with an in-progress marker, duplicates wait and replay the identical response, 409 + Retry-After on timeout, release on 5xx/throw, stale-lock takeover fenced by a lock token. Tests fire parallel duplicates against a slow handler and against `POST /orders`.
+- Learned: releasing the key when the client disconnects looks tidy but is wrong; the handler may still be running, and a retry would execute it twice. Only the TTL should reclaim it.
+- Schema note: `idempotency_keys.status_code` / `response_body` are now nullable, so an existing `DB_FILE` from earlier in the week must be recreated.
+- 2026-11-13 (W3 Fri): Return identical responses to concurrent duplicate requests

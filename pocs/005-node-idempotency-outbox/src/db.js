@@ -9,12 +9,18 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
+-- A row with status_code NULL is an in-progress marker: the request that
+-- inserted it (identified by lock_token) is still running. Duplicates wait for
+-- the response to be recorded; a marker older than the lock TTL is taken over.
 CREATE TABLE IF NOT EXISTS idempotency_keys (
   key           TEXT PRIMARY KEY,
   request_hash  TEXT NOT NULL,
-  status_code   INTEGER NOT NULL,
-  response_body TEXT NOT NULL,
-  created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  lock_token    TEXT,
+  locked_at     INTEGER,
+  status_code   INTEGER,
+  response_body TEXT,
+  created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  CHECK ((status_code IS NULL) = (response_body IS NULL))
 );
 
 -- Transactional outbox: events are written in the same transaction as the
