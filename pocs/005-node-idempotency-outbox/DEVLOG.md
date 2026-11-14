@@ -26,3 +26,9 @@
 - Learned: releasing the key when the client disconnects looks tidy but is wrong; the handler may still be running, and a retry would execute it twice. Only the TTL should reclaim it.
 - Schema note: `idempotency_keys.status_code` / `response_body` are now nullable, so an existing `DB_FILE` from earlier in the week must be recreated.
 - 2026-11-13 (W3 Fri): Return identical responses to concurrent duplicate requests
+
+## Sat
+- Added a Mermaid sequence diagram (claim, concurrent duplicate, replay, relay) and a failure-scenario table mapping each case to its outcome and the test that covers it.
+- Added a test for the one scenario without coverage: a handler that outlives the lock TTL. The duplicate takes over, and the slow owner's completion is fenced on `lock_token`, so later retries replay the new owner's response.
+- Learned: writing the failure table showed which claims had no tests behind them. A shared counter read after an `await` also gave wrong owner ids; capture per-request state before suspending.
+- 2026-11-14 (W3 Sat): Document request flow and failure scenarios with a sequence diagram

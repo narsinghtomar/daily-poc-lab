@@ -143,6 +143,35 @@ test('an abandoned in-progress marker is taken over after the lock TTL', async (
   } finally { db.close(); }
 });
 
+test('a slow owner whose lock was taken over cannot overwrite the new owner\'s response', async () => {
+  const db = openDb(':memory:');
+  // The handler outlives the lock TTL, so a duplicate takes the key over mid-flight.
+  const calls = { n: 0 };
+  const app = express();
+  app.use(express.json());
+  app.use(idempotency(db, { lockTtlMs: 50, waitMs: 2_000 }));
+  app.post('/charges', async (_req, res) => {
+    const owner = ++calls.n;
+    await sleep(300);
+    res.status(201).json({ owner });
+  });
+  try {
+    await listen(app, async (base) => {
+      const original = post(base, '/charges', { amount_cents: 700 }, 'c7');
+      await sleep(100);
+      const takeover = post(base, '/charges', { amount_cents: 700 }, 'c7');
+      const [first, second] = await Promise.all([original, takeover]);
+      assert.deepStrictEqual(await first.json(), { owner: 1 });
+      assert.deepStrictEqual(await second.json(), { owner: 2 });
+      assert.strictEqual(calls.n, 2);
+      // The stored result belongs to the owner holding the current lock token.
+      const retry = await post(base, '/charges', { amount_cents: 700 }, 'c7');
+      assert.strictEqual(retry.headers.get('idempotent-replayed'), 'true');
+      assert.deepStrictEqual(await retry.json(), { owner: 2 });
+    });
+  } finally { db.close(); }
+});
+
 test('concurrent duplicate POST /orders create one order and one outbox event', async () => {
   const db = openDb(':memory:');
   try {

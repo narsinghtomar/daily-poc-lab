@@ -20,6 +20,63 @@ Clients retry payment requests after timeouts, and services must not double-char
 - Failed publishes bump `attempts`, record `last_error` and push `next_attempt_at` out with capped exponential backoff plus full jitter; one bad event does not block the rest of the batch
 - `start()` / `stop()` with no overlapping passes; `stop()` waits for the in-flight pass so shutdown never closes the database mid-publish
 
+## Sequence diagram
+Happy path, a concurrent duplicate, a later retry, and the relay delivering the event.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant API as Express API
+    participant K as idempotency_keys
+    participant DB as orders + outbox
+    participant R as Relay worker
+    participant B as Broker
+
+    C->>API: POST /orders (Idempotency-Key: k1)
+    API->>K: INSERT in-progress marker (hash, lock_token)
+    K-->>API: claimed (changes = 1)
+    C->>API: duplicate POST (k1), e.g. client timeout retry
+    API->>K: INSERT ... ON CONFLICT
+    K-->>API: not claimed, row still in progress
+    loop every pollMs until done or waitMs
+        API->>K: SELECT status_code
+    end
+    API->>DB: BEGIN; INSERT order; INSERT order.created; COMMIT
+    API->>K: UPDATE status + body WHERE lock_token matches
+    API-->>C: 201 {order}
+    API-->>C: 201 {order} (Idempotent-Replayed: true)
+    C->>API: retry later (k1)
+    API->>K: SELECT
+    API-->>C: 201 {order} (Idempotent-Replayed: true)
+
+    loop every pollIntervalMs
+        R->>DB: SELECT due events (published_at IS NULL)
+        R->>B: publish(event)
+        B-->>R: ack
+        R->>DB: SET published_at
+    end
+```
+
+## Failure scenarios
+| # | What goes wrong | What happens | Covered by |
+|---|---|---|---|
+| 1 | Client times out and retries after the request finished | Stored status + body replayed with `Idempotent-Replayed: true`; no second order or event | `app.test.js` replay tests |
+| 2 | Two copies of the request arrive at the same time | One atomic upsert claims the key; the other waits and replays the identical response | `concurrency.test.js` parallel duplicates |
+| 3 | Same key reused with a different payload | `422`, nothing executed | `app.test.js`, `concurrency.test.js` |
+| 4 | Duplicate waits longer than `waitMs` | `409` with `Retry-After: 1`; client retries later and gets the replay | `concurrency.test.js` |
+| 5 | Request fails validation (4xx) | The 4xx is stored and replayed; resending the same bad payload cannot suddenly succeed | `app.test.js` |
+| 6 | Handler returns 5xx or throws | Marker is released, so a retry or a waiting duplicate runs it again | `concurrency.test.js` |
+| 7 | Process crashes after claiming the key | Marker is taken over once older than `lockTtlMs` | `concurrency.test.js` |
+| 8 | Handler is still running when the lock TTL expires | A duplicate takes over and runs the handler again; the slow owner's write is fenced on `lock_token`, so the stored result is the new owner's. Keep `lockTtlMs` well above the slowest handler | `concurrency.test.js` fencing test |
+| 9 | Outbox insert fails inside the order transaction | Whole transaction rolls back: no order without its event, no event without its order | `orders.test.js` |
+| 10 | Process crashes between commit and publish | Event is still in `outbox` and the relay sends it on its next pass | `relay.test.js` |
+| 11 | Broker is down or rejects an event | `attempts` and `last_error` recorded, `next_attempt_at` pushed out with capped backoff + jitter; other events in the batch still go | `relay.test.js` |
+| 12 | Crash after publish but before `published_at` is set | Same event id is published again (at-least-once); consumers dedupe on event id | `relay.test.js` |
+| 13 | SIGTERM during a relay pass | `stop()` waits for the in-flight pass before the database is closed | `relay.test.js` |
+
+Not handled by this POC (see production notes): client disconnects mid-request (the key stays locked until the handler finishes or the TTL expires, by design), poison events that never publish, and per-aggregate ordering.
+
 ## Usage
 ```bash
 curl -X POST localhost:3000/orders -H 'content-type: application/json' \
@@ -56,6 +113,7 @@ yarn start   # http://localhost:3000, set PORT / DB_FILE to override
 - Why an in-progress marker: check-then-insert has a race where two duplicates both miss the lookup and both charge; a single atomic insert lets exactly one win
 - Why wait instead of returning 409 straight away: the client wanted the result, and replaying it is the same answer the original caller saw
 - Why a lock token: after a stale takeover the original owner may still finish, and fencing its writes on the token stops it clobbering the new owner
+- Why fence on a lock token rather than trust the TTL: a TTL only guesses that the owner is dead; the token makes a wrong guess harmless to stored state
 - Why jitter on backoff: without it, many failed events retry in lockstep and hit a recovering broker at the same instant
 
 ## Daily plan
@@ -64,5 +122,5 @@ yarn start   # http://localhost:3000, set PORT / DB_FILE to override
 - [x] Wed: Outbox table written in same transaction as order insert
 - [x] Thu: Outbox relay worker with at-least-once delivery + backoff
 - [x] Fri: Concurrent duplicate requests return identical response
-- [ ] Sat: README with sequence diagram and failure scenarios
+- [x] Sat: README with sequence diagram and failure scenarios
 - [ ] Sun: weekly review in DEVLOG.md
