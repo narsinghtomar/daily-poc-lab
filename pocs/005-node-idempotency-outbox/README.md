@@ -1,6 +1,6 @@
 # 005 · Idempotency keys + transactional outbox for payments-style APIs
 
-**Stack:** Node.js · **Week:** 3 · **Status:** in progress
+**Stack:** Node.js · **Week:** 3 · **Status:** done
 
 ## Problem
 Clients retry payment requests after timeouts, and services must not double-charge or lose events. This POC builds idempotency keys plus a transactional outbox so retries are safe and events are published at-least-once.
@@ -123,4 +123,4 @@ yarn start   # http://localhost:3000, set PORT / DB_FILE to override
 - [x] Thu: Outbox relay worker with at-least-once delivery + backoff
 - [x] Fri: Concurrent duplicate requests return identical response
 - [x] Sat: README with sequence diagram and failure scenarios
-- [ ] Sun: weekly review in DEVLOG.md
+- [x] Sun: weekly review in DEVLOG.md
