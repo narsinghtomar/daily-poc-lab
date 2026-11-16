@@ -13,8 +13,8 @@ Each POC answers one engineering question, is time-boxed to a week, and ships in
 | 002 | [AI diff reviewer](pocs/002-ai-diff-reviewer) | Node.js + AI | Done |
 | 003 | [Offline-first task app (Riverpod + Hive)](pocs/003-flutter-offline-todo) | Flutter | Done |
 | 004 | [Listings page with App Router, ISR and Server Actions](pocs/004-nextjs-listings-isr) | React / Next.js | Done |
-| 005 | [Idempotency keys + transactional outbox for payments-style APIs](pocs/005-node-idempotency-outbox) | Node.js | In progress |
-| 006 | Infinite feed with FlashList, pagination and optimistic likes | React Native | Planned (week 4) |
+| 005 | [Idempotency keys + transactional outbox for payments-style APIs](pocs/005-node-idempotency-outbox) | Node.js | Done |
+| 006 | [Infinite feed with FlashList, pagination and optimistic likes](pocs/006-rn-infinite-feed) | React Native | In progress |
 | 007 | RAG over markdown docs with citations | AI / LLM | Planned (week 5) |
 | 008 | BLoC auth flow with token refresh interceptor (Dio) | Flutter | Planned (week 6) |
 | 009 | Background jobs with BullMQ: retries, DLQ, rate limit | Node.js | Planned (week 7) |
