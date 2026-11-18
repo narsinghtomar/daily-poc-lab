@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { FeedApiError, type FeedApi } from '../api/types.ts';
+import { FeedApiError, type FeedApi, type LikeState } from '../api/types.ts';
 import { canLoadMore, feedReducer, initialFeedState, type FeedState, type LoadKind } from './feedReducer.ts';
 
 export type UseFeed = FeedState & {
   loadMore: () => void;
   refresh: () => void;
   retry: () => void;
+  /** Writes a server-confirmed like into the list. */
+  confirmLike: (like: LikeState) => void;
 };
 
 /**
@@ -84,5 +86,7 @@ export function useFeed(api: FeedApi, pageSize = 20): UseFeed {
     }
   }, [run]);
 
-  return { ...state, loadMore, refresh, retry };
+  const confirmLike = useCallback((like: LikeState) => dispatch({ type: 'likeConfirmed', like }), []);
+
+  return { ...state, loadMore, refresh, retry, confirmLike };
 }

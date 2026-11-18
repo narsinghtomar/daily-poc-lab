@@ -18,13 +18,19 @@ Social and marketplace feeds load in pages while new items keep arriving at the 
 - Rows are de-duplicated by id when pages are appended; a failed page stops auto paging (no retry loop on scroll) until the user taps Retry; a failed refresh keeps the current list and shows a banner
 - An `INVALID_CURSOR` on a page request resets the feed to the top instead of getting stuck
 - A dev ticker publishes a new post every 10 s, so pull to refresh visibly brings in fresh posts
+- Optimistic like/unlike with TanStack Query (`src/likes/`): the heart and count change on tap, and a failed call rolls back on its own with a short "undone" banner
+- The optimistic value is derived, not written: `useMutationState` reads the variables of pending like mutations and `applyPendingLikes` layers them over the server-confirmed list. When a call fails it stops being pending and the row falls back to server truth, so there is no snapshot to restore and refresh or paging mid-like cannot wipe the optimistic state
+- The like endpoint is idempotent (`setLike({ postId, liked })`, i.e. PUT/DELETE, not a toggle) and returns the server's `{ likedByMe, likeCount }`, which is written into the list on success before the mutation stops being pending, so the row never flickers
+- Mutations share a per-post `scope`, so rapid taps on one post reach the server one at a time in tap order while other posts still like in parallel; the UI always shows the latest tap
+- Rollback is tested end to end without a device: the real mutation options run on a `QueryClient` against a hand-controlled fake server, covering success, failure, out-of-order taps, and "first tap saved, second failed"
 
 ## Run
 ```bash
 yarn install    # scaffolded from: yarn create expo-app . --template blank-typescript
                 # list added with: yarn add @shopify/flash-list
+                # likes added with: yarn add @tanstack/react-query
 yarn start      # then press a (Android) or i (iOS), or scan the QR code with Expo Go
-yarn test       # cursor, pagination and feed state tests (node:test, no device needed)
+yarn test       # cursor, pagination, feed state and like rollback tests (node:test, no device needed)
 yarn typecheck
 ```
 
@@ -34,6 +40,9 @@ yarn typecheck
 - Map `INVALID_CURSOR` to a 400 and have the client reset to the first page; retry `NETWORK` errors with backoff
 - Show a "N new posts" pill (poll a lightweight `GET /feed/head`) instead of relying only on pull to refresh, and keep scroll position when prepending
 - Cache pages (TanStack Query infinite query) so the feed survives navigation and app restarts
+- Retry like calls on `NETWORK` errors with backoff (safe because the call is idempotent), and persist paused mutations so a like made offline is sent when the app is back online
+- Debounce or coalesce rapid taps on the same post so only the final intent is sent
+- Push like counts from other users via a socket or periodic refetch instead of only on refresh
 - Generate the client types from an OpenAPI schema instead of hand-writing them
 
 ## Interview talking points
@@ -43,11 +52,14 @@ yarn typecheck
 - Why guard `onEndReached`: it can fire several times before state updates, so the hook keeps an in-flight ref and a request id instead of trusting render state
 - Refresh vs load more race: refresh aborts the pending page and the reducer ignores any response whose request id is not the latest, so an old page never lands on a fresh list
 - Why an opaque cursor: clients cannot build or depend on its contents, which keeps the server free to change the sort key later
+- Snapshot rollback vs derived optimistic state: restoring a snapshot in `onError` breaks when taps overlap (the snapshot may itself be optimistic); deriving the UI from pending mutation variables makes rollback automatic and always lands on server truth
+- Why `liked: boolean` instead of a toggle endpoint: a toggle is not idempotent, so a retry or a duplicated request flips the like back; a desired-state call can be repeated safely
+- Why a mutation `scope` per post: without it, like then unlike can reach the server out of order and the final state depends on network timing
 
 ## Daily plan
 - [x] Mon: Expo app, mock paginated API (cursor based)
 - [x] Tue: FlashList feed with cursor pagination + pull to refresh
-- [ ] Wed: Optimistic like/unlike with rollback on failure (TanStack Query)
+- [x] Wed: Optimistic like/unlike with rollback on failure (TanStack Query)
 - [ ] Thu: Memoized rows, getItemType, measure with Perf Monitor
 - [ ] Fri: Jest + RNTL tests for pagination and rollback
 - [ ] Sat: README with FlatList vs FlashList comparison and screen recording

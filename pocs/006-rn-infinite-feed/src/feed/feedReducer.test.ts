@@ -88,3 +88,23 @@ test('appendUnique returns the same array when nothing is new', () => {
   assert.equal(appendUnique(existing, []), existing);
   assert.equal(appendUnique(existing, posts.slice(0, 3)), existing);
 });
+
+test('likeConfirmed patches one row and keeps the others by reference', () => {
+  const s = loaded();
+  const target = s.items[3];
+  const next = feedReducer(s, {
+    type: 'likeConfirmed',
+    like: { postId: target.id, likedByMe: !target.likedByMe, likeCount: target.likeCount + 7 },
+  });
+  assert.equal(next.items[3].likedByMe, !target.likedByMe);
+  assert.equal(next.items[3].likeCount, target.likeCount + 7);
+  assert.equal(target.likeCount, s.items[3].likeCount, 'previous state is not mutated');
+  next.items.forEach((p, i) => i !== 3 && assert.equal(p, s.items[i]));
+});
+
+test('likeConfirmed is a no-op for unknown posts or unchanged state', () => {
+  const s = loaded();
+  const p = s.items[0];
+  assert.equal(feedReducer(s, { type: 'likeConfirmed', like: { postId: 'gone', likedByMe: true, likeCount: 1 } }), s);
+  assert.equal(feedReducer(s, { type: 'likeConfirmed', like: { postId: p.id, likedByMe: p.likedByMe, likeCount: p.likeCount } }), s);
+});

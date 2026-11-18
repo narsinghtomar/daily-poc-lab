@@ -1160,6 +1160,18 @@
   resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.27.12.tgz#0cacd3cff047a32936b1ace47ea7c86eaab60a7f"
   integrity sha512-hhyNJ+nbR6ZR7pToHvllEFun9TL0sbL+tk/ON75lo+Xas054uez98qRbsuNt7MBCyZKK4+8Yli/OAGZhmfBZ/g==
 
+"@tanstack/query-core@5.108.0":
+  version "5.108.0"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.108.0.tgz#1ba1f9ee4f86cdf500a100b623a8cda6e1ce9573"
+  integrity sha512-X9zJUtEV/0D2q9pmGS/Bza8S4bNovSBhZOtdhtu0fzsHwizC6C+Eh/q5CX3MQBchsRMrirWVQmv7Fp4OStzV9g==
+
+"@tanstack/react-query@^5.108.0":
+  version "5.108.0"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.108.0.tgz#01f0e0c122e399ae1d1ba6966b4530deb2ed6a16"
+  integrity sha512-DpMbB8pVorEZcsHRa0Z13KQGfmndqvJbuLy9h+xfP8XpuEZBOxzq+QfXGonQ0fAgRSWhc+QsfoRETSTWxAEAVw==
+  dependencies:
+    "@tanstack/query-core" "5.108.0"
+
 "@types/istanbul-lib-coverage@*", "@types/istanbul-lib-coverage@^2.0.0":
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/@types/istanbul-lib-coverage/-/istanbul-lib-coverage-2.0.6.tgz#7739c232a1fee9b4d3ce8985f314c0c6d33549d7"

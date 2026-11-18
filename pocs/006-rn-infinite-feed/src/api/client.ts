@@ -9,6 +9,8 @@ export const feedApi = createMockFeedApi({
   posts: makeSeedPosts(120),
   latencyMs: 600,
   failureRate: 0.1,
+  // Higher than page loads so the like rollback is easy to see while developing.
+  likeFailureRate: 0.2,
 });
 
 /**

@@ -1,4 +1,4 @@
-import type { FeedApiErrorCode, FeedPage, Post } from '../api/types.ts';
+import type { FeedApiErrorCode, FeedPage, LikeState, Post } from '../api/types.ts';
 
 /**
  * Pagination state for the feed, kept free of React so it can be unit tested.
@@ -24,7 +24,9 @@ export type FeedState = {
 export type FeedAction =
   | { type: 'request'; kind: LoadKind; requestId: number }
   | { type: 'success'; kind: LoadKind; requestId: number; page: FeedPage }
-  | { type: 'failure'; kind: LoadKind; requestId: number; code: FeedApiErrorCode };
+  | { type: 'failure'; kind: LoadKind; requestId: number; code: FeedApiErrorCode }
+  /** Server-confirmed like state. Not tied to a page request, so it is never treated as stale. */
+  | { type: 'likeConfirmed'; like: LikeState };
 
 export const initialFeedState: FeedState = {
   items: [],
@@ -75,5 +77,17 @@ export function feedReducer(state: FeedState, action: FeedAction): FeedState {
       if (action.requestId !== state.requestId) return state;
       // Keep whatever is already on screen; a failed refresh should not blank the feed.
       return { ...state, loading: null, error: { kind: action.kind, code: action.code } };
+
+    case 'likeConfirmed': {
+      const { postId, likedByMe, likeCount } = action.like;
+      const index = state.items.findIndex((p) => p.id === postId);
+      if (index === -1) return state;
+      const post = state.items[index];
+      if (post.likedByMe === likedByMe && post.likeCount === likeCount) return state;
+      // Replace only the changed row so every other row keeps its identity (and its memo).
+      const items = state.items.slice();
+      items[index] = { ...post, likedByMe, likeCount };
+      return { ...state, items };
+    }
   }
 }

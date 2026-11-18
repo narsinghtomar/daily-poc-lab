@@ -1,5 +1,13 @@
 import { compareFeedOrder, decodeCursor, encodeCursor } from './cursor.ts';
-import { FeedApiError, type FeedApi, type FeedPage, type FetchFeedParams, type Post } from './types.ts';
+import {
+  FeedApiError,
+  type FeedApi,
+  type FeedPage,
+  type FetchFeedParams,
+  type LikeState,
+  type Post,
+  type SetLikeParams,
+} from './types.ts';
 
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 50;
@@ -10,6 +18,8 @@ export type MockFeedApiOptions = {
   latencyMs?: number;
   /** Probability (0..1) that a request fails with a NETWORK error. */
   failureRate?: number;
+  /** Failure probability for like/unlike calls. Defaults to `failureRate`. */
+  likeFailureRate?: number;
   /** Injected so failure behaviour is deterministic in tests. */
   random?: () => number;
 };
@@ -49,7 +59,12 @@ const clonePost = (p: Post): Post => ({ ...p, author: { ...p.author } });
  */
 export function createMockFeedApi(options: MockFeedApiOptions = {}): MockFeedApi {
   const { latencyMs = 0, failureRate = 0, random = Math.random } = options;
+  const likeFailureRate = options.likeFailureRate ?? failureRate;
   const store: Post[] = (options.posts ?? []).map(clonePost).sort(compareFeedOrder);
+
+  const maybeFail = (rate: number) => {
+    if (rate > 0 && random() < rate) throw new FeedApiError('NETWORK', 'Simulated network failure');
+  };
 
   return {
     async fetchFeedPage(params: FetchFeedParams = {}): Promise<FeedPage> {
@@ -57,9 +72,7 @@ export function createMockFeedApi(options: MockFeedApiOptions = {}): MockFeedApi
       const limit = clampLimit(params.limit);
 
       await sleep(latencyMs, signal);
-      if (failureRate > 0 && random() < failureRate) {
-        throw new FeedApiError('NETWORK', 'Simulated network failure');
-      }
+      maybeFail(failureRate);
 
       let start = 0;
       if (cursor) {
@@ -78,6 +91,20 @@ export function createMockFeedApi(options: MockFeedApiOptions = {}): MockFeedApi
       const last = items[items.length - 1];
 
       return { items, nextCursor: hasMore && last ? encodeCursor(last) : null };
+    },
+
+    async setLike({ postId, liked, signal }: SetLikeParams): Promise<LikeState> {
+      await sleep(latencyMs, signal);
+      maybeFail(likeFailureRate);
+
+      const post = store.find((p) => p.id === postId);
+      if (!post) throw new FeedApiError('NOT_FOUND', `Post ${postId} does not exist`);
+      // Idempotent: asking for the state the post is already in changes nothing.
+      if (post.likedByMe !== liked) {
+        post.likedByMe = liked;
+        post.likeCount = Math.max(0, post.likeCount + (liked ? 1 : -1));
+      }
+      return { postId, likedByMe: post.likedByMe, likeCount: post.likeCount };
     },
 
     publish(post: Post) {

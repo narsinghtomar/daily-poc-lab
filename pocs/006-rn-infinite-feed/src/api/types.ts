@@ -25,11 +25,26 @@ export type FetchFeedParams = {
   signal?: AbortSignal;
 };
 
+/** Server truth for one post's like, returned by every like/unlike call. */
+export type LikeState = {
+  postId: string;
+  likedByMe: boolean;
+  likeCount: number;
+};
+
+export type SetLikeParams = {
+  postId: string;
+  /** Desired end state, not a toggle, so retries and duplicates are harmless (PUT/DELETE /posts/:id/like). */
+  liked: boolean;
+  signal?: AbortSignal;
+};
+
 export interface FeedApi {
   fetchFeedPage(params?: FetchFeedParams): Promise<FeedPage>;
+  setLike(params: SetLikeParams): Promise<LikeState>;
 }
 
-export type FeedApiErrorCode = 'INVALID_CURSOR' | 'NETWORK' | 'ABORTED';
+export type FeedApiErrorCode = 'INVALID_CURSOR' | 'NOT_FOUND' | 'NETWORK' | 'ABORTED';
 
 export class FeedApiError extends Error {
   readonly code: FeedApiErrorCode;

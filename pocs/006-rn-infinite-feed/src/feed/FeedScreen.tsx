@@ -1,7 +1,10 @@
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
-import { useCallback } from 'react';
+import { useMutationState } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { FeedApi, FeedApiErrorCode, Post } from '../api/types.ts';
+import { LikeProvider } from '../likes/LikeContext.tsx';
+import { applyPendingLikes, LIKE_MUTATION_KEY, type LikeMutationDeps, type LikeVars } from '../likes/likeMutation.ts';
 import { PostRow } from './PostRow.tsx';
 import { useFeed } from './useFeed.ts';
 
@@ -16,7 +19,34 @@ const renderItem: ListRenderItem<Post> = ({ item }) => <PostRow post={item} />;
  */
 export function FeedScreen({ api, pageSize = 20 }: Props) {
   const feed = useFeed(api, pageSize);
-  const { items, loading, error, hasMore, loadMore, refresh, retry } = feed;
+  const { items: confirmedItems, loading, error, hasMore, loadMore, refresh, retry, confirmLike } = feed;
+
+  // Optimistic likes: the pending mutations' variables layered over server state.
+  // Survives refresh and paging because it never touches the list itself.
+  const pendingLikes = useMutationState({
+    filters: { mutationKey: [...LIKE_MUTATION_KEY], status: 'pending' },
+    select: (m) => m.state.variables as LikeVars | undefined,
+  });
+  const items = useMemo(() => applyPendingLikes(confirmedItems, pendingLikes), [confirmedItems, pendingLikes]);
+
+  const [likeNotice, setLikeNotice] = useState(false);
+  useEffect(() => {
+    if (!likeNotice) return;
+    const t = setTimeout(() => setLikeNotice(false), 3000);
+    return () => clearTimeout(t);
+  }, [likeNotice]);
+
+  // Mutation callbacks outlive renders (and recycled rows), so give them stable functions.
+  const confirmRef = useRef(confirmLike);
+  confirmRef.current = confirmLike;
+  const likeDeps = useMemo<LikeMutationDeps>(
+    () => ({
+      api,
+      onConfirmed: (like) => confirmRef.current(like),
+      onFailed: () => setLikeNotice(true),
+    }),
+    [api],
+  );
 
   const footer = useCallback(() => {
     if (items.length === 0) return null;
@@ -33,27 +63,34 @@ export function FeedScreen({ api, pageSize = 20 }: Props) {
   }, [loading, error, retry]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header} accessibilityRole="header">
-        Feed · {items.length} posts
-      </Text>
-      {error?.kind === 'refresh' && (
-        <Text style={styles.banner} accessibilityLiveRegion="polite">
-          Couldn't refresh. Showing the last loaded posts.
+    <LikeProvider value={likeDeps}>
+      <View style={styles.container}>
+        <Text style={styles.header} accessibilityRole="header">
+          Feed · {items.length} posts
         </Text>
-      )}
-      <FlashList
-        data={items}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        refreshing={loading === 'refresh'}
-        onRefresh={refresh}
-        ListFooterComponent={footer}
-        ListEmptyComponent={empty}
-      />
-    </View>
+        {error?.kind === 'refresh' && (
+          <Text style={styles.banner} accessibilityLiveRegion="polite">
+            Couldn't refresh. Showing the last loaded posts.
+          </Text>
+        )}
+        {likeNotice && (
+          <Text style={styles.banner} accessibilityLiveRegion="polite">
+            Couldn't save your like. It has been undone.
+          </Text>
+        )}
+        <FlashList
+          data={items}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          refreshing={loading === 'refresh'}
+          onRefresh={refresh}
+          ListFooterComponent={footer}
+          ListEmptyComponent={empty}
+        />
+      </View>
+    </LikeProvider>
   );
 }
 

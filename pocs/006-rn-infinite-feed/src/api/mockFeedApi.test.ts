@@ -120,3 +120,28 @@ test('returned posts are copies, so callers cannot mutate the store', async () =
 test('seed data is deterministic', () => {
   assert.deepEqual(makeSeedPosts(10), makeSeedPosts(10));
 });
+
+test('setLike is idempotent and returns the server state', async () => {
+  const [post] = makeSeedPosts(1);
+  const api = createMockFeedApi({ posts: [{ ...post, likedByMe: false, likeCount: 4 }] });
+
+  assert.deepEqual(await api.setLike({ postId: post.id, liked: true }), { postId: post.id, likedByMe: true, likeCount: 5 });
+  assert.deepEqual(await api.setLike({ postId: post.id, liked: true }), { postId: post.id, likedByMe: true, likeCount: 5 });
+  assert.deepEqual(await api.setLike({ postId: post.id, liked: false }), { postId: post.id, likedByMe: false, likeCount: 4 });
+
+  const { items } = await api.fetchFeedPage();
+  assert.equal(items[0].likeCount, 4, 'feed reflects the stored like state');
+});
+
+test('setLike rejects unknown posts and injected failures leave the store untouched', async () => {
+  const [post] = makeSeedPosts(1);
+  const api = createMockFeedApi({ posts: [{ ...post, likedByMe: false, likeCount: 0 }], likeFailureRate: 1, random: () => 0 });
+
+  await assert.rejects(api.setLike({ postId: post.id, liked: true }), (e) => e instanceof FeedApiError && e.code === 'NETWORK');
+  const ok = createMockFeedApi({ posts: [post] });
+  await assert.rejects(ok.setLike({ postId: 'missing', liked: true }), (e) => e instanceof FeedApiError && e.code === 'NOT_FOUND');
+
+  const { items } = await api.fetchFeedPage();
+  assert.equal(items[0].likedByMe, false, 'a failed call must not write');
+  assert.equal(items[0].likeCount, 0);
+});
