@@ -3,6 +3,14 @@ export type Author = {
   name: string;
 };
 
+/** Image attachment. Only the box size is needed before the image loads, so rows never jump. */
+export type PostMedia = {
+  /** width / height */
+  aspectRatio: number;
+  /** Placeholder colour shown while the image loads. */
+  placeholderColor: string;
+};
+
 export type Post = {
   id: string;
   author: Author;
@@ -11,6 +19,8 @@ export type Post = {
   createdAt: string;
   likeCount: number;
   likedByMe: boolean;
+  /** Optional attachment. Rows with media render a different layout (see getPostItemType). */
+  media?: PostMedia | null;
 };
 
 export type FeedPage = {

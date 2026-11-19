@@ -5,13 +5,17 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import type { FeedApi, FeedApiErrorCode, Post } from '../api/types.ts';
 import { LikeProvider } from '../likes/LikeContext.tsx';
 import { applyPendingLikes, LIKE_MUTATION_KEY, type LikeMutationDeps, type LikeVars } from '../likes/likeMutation.ts';
+import { ListProfiler } from '../perf/ListProfiler.tsx';
 import { PostRow } from './PostRow.tsx';
+import { getPostItemType } from './rowModel.ts';
 import { useFeed } from './useFeed.ts';
 
 type Props = { api: FeedApi; pageSize?: number };
 
 const keyExtractor = (post: Post) => post.id;
 const renderItem: ListRenderItem<Post> = ({ item }) => <PostRow post={item} />;
+// Module level so FlashList gets the same functions on every render.
+const getItemType = (post: Post) => getPostItemType(post);
 
 /**
  * Virtualized feed. Pages load as the user nears the end of the list
@@ -78,17 +82,20 @@ export function FeedScreen({ api, pageSize = 20 }: Props) {
             Couldn't save your like. It has been undone.
           </Text>
         )}
-        <FlashList
-          data={items}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
-          refreshing={loading === 'refresh'}
-          onRefresh={refresh}
-          ListFooterComponent={footer}
-          ListEmptyComponent={empty}
-        />
+        <ListProfiler id="feed">
+          <FlashList
+            data={items}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            getItemType={getItemType}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
+            refreshing={loading === 'refresh'}
+            onRefresh={refresh}
+            ListFooterComponent={footer}
+            ListEmptyComponent={empty}
+          />
+        </ListProfiler>
       </View>
     </LikeProvider>
   );

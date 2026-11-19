@@ -32,6 +32,9 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+const MEDIA_COLORS = ['#cbd5e1', '#fde68a', '#bbf7d0', '#bfdbfe', '#fbcfe8'];
+const MEDIA_RATIOS = [16 / 9, 4 / 3, 1];
+
 const BASE_TIME = Date.UTC(2026, 10, 1, 12, 0, 0);
 
 export function makeSeedPosts(count = 120, seed = 42): Post[] {
@@ -47,6 +50,12 @@ export function makeSeedPosts(count = 120, seed = 42): Post[] {
       createdAt: new Date(BASE_TIME - minutesAgo * 60_000).toISOString(),
       likeCount: Math.floor(rand() * 500),
       likedByMe: rand() < 0.2,
+      // Every 4th post has a photo, so the list mixes two row layouts. Index based, so the
+      // random sequence (and every other field) stays the same as before media existed.
+      media:
+        i % 4 === 2
+          ? { aspectRatio: MEDIA_RATIOS[i % MEDIA_RATIOS.length], placeholderColor: MEDIA_COLORS[i % MEDIA_COLORS.length] }
+          : null,
     });
   }
   return posts;

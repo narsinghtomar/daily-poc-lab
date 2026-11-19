@@ -50,7 +50,7 @@ function clampLimit(limit: number | undefined): number {
   return Math.min(MAX_PAGE_SIZE, Math.max(1, Math.trunc(limit)));
 }
 
-const clonePost = (p: Post): Post => ({ ...p, author: { ...p.author } });
+const clonePost = (p: Post): Post => ({ ...p, author: { ...p.author }, media: p.media ? { ...p.media } : p.media });
 
 /**
  * In-memory stand-in for GET /feed?cursor=&limit=.
