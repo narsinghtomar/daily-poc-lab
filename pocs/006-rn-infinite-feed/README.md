@@ -29,14 +29,21 @@ Social and marketplace feeds load in pages while new items keep arriving at the 
 - `renderItem`, `keyExtractor` and `getItemType` are module-level functions, and one shared `Intl.DateTimeFormat` replaces a `toLocaleString` call per row (which builds a new formatter every time)
 - A dev-only `ListProfiler` wraps the list in React's `Profiler` and logs commit stats (avg, p95, max, commits over the 16.7 ms frame budget) to the Metro console every 50 commits; it renders nothing extra in release builds
 - Rollback is tested end to end without a device: the real mutation options run on a `QueryClient` against a hand-controlled fake server, covering success, failure, out-of-order taps, and "first tap saved, second failed"
+- Component and hook tests with Jest (`jest-expo` preset) and React Native Testing Library: `useFeed` is driven through `renderHook`, and `FeedScreen` is rendered with the real FlashList and TanStack Query, queried by accessible role and label the way a screen reader sees it
+- The tests use a controlled `FeedApi` (`src/test/controlledFeedApi.ts`): every call stays pending until the test answers or fails it, in any order, while the data still comes from the real mock server, so cursors and like counts are realistic and race conditions are reproducible instead of timing-dependent
+- Pagination tests cover cursor paging to the end, the in-flight guard on repeated `onEndReached`, refresh aborting a pending page, a late page that ignores abort being dropped as stale, failed page with retry on the same cursor, `INVALID_CURSOR` reset, failed refresh keeping the list, and abort on unmount
+- Rollback tests tap the real like button: the count changes at once, stays after the server confirms, rolls back with a notice on failure (the 3 s notice is checked with fake timers), lands on the saved like when "like" succeeds and the following "unlike" fails, and keeps the optimistic value across a pull to refresh
 
 ## Run
 ```bash
 yarn install    # scaffolded from: yarn create expo-app . --template blank-typescript
                 # list added with: yarn add @shopify/flash-list
                 # likes added with: yarn add @tanstack/react-query
+                # tests added with: yarn add -D jest jest-expo @react-native/jest-preset @jest/globals @testing-library/react-native test-renderer
 yarn start      # then press a (Android) or i (iOS), or scan the QR code with Expo Go
-yarn test       # cursor, pagination, feed state, like rollback, row model and perf stats tests (node:test, no device needed)
+yarn test       # both suites below, no device or simulator needed
+yarn test:unit  # pure logic: cursor, mock API, feed reducer, like mutation, row model, perf stats (node:test)
+yarn test:ui    # Jest + React Native Testing Library: useFeed pagination and FeedScreen like rollback
 yarn typecheck
 ```
 
@@ -61,6 +68,7 @@ Run on a real mid-range Android device in a release-like build (`yarn expo start
 - Track scroll performance in the field (frozen and slow frames per screen, e.g. via a performance SDK) instead of relying only on local Perf Monitor runs
 - Load real images with a cached image component (e.g. `expo-image`) and have the API return image dimensions so the placeholder box is exact
 - Generate the client types from an OpenAPI schema instead of hand-writing them
+- Run `yarn test` and `yarn typecheck` in CI on every pull request, and add a few Maestro or Detox flows on a real build for what Jest cannot see (native scrolling, gestures, image loading)
 
 ## Interview talking points
 - Why cursor over offset: offset is `O(offset)` in the database and shifts under inserts; a keyset cursor is stable and constant cost per page
@@ -75,12 +83,14 @@ Run on a real mid-range Android device in a release-like build (`yarn expo start
 - Why a custom `memo` comparator: default `memo` compares by reference, and a refresh returns new objects for unchanged posts, so every row re-renders; comparing drawn fields avoids that, at the cost of keeping the comparator in sync with the row
 - Perf Monitor vs Profiler: Perf Monitor tells you frames are dropping and on which thread; the React Profiler tells you which component render work caused it
 - Why a mutation `scope` per post: without it, like then unlike can reach the server out of order and the final state depends on network timing
+- Why a controlled fake instead of mocking `fetch` with delays: the test decides when and in which order each response arrives, so races (late page after refresh, second tap failing) are reproduced every run without sleeps or flakes
+- Testing async UI with RNTL: wrap every state-changing step in `act` so effects and renders settle before asserting; TanStack Query batches updates on a `setTimeout(0)`, so tests switch its scheduler to `queueMicrotask`, and `gcTime: Infinity` stops leftover cache timers from keeping Jest alive
 
 ## Daily plan
 - [x] Mon: Expo app, mock paginated API (cursor based)
 - [x] Tue: FlashList feed with cursor pagination + pull to refresh
 - [x] Wed: Optimistic like/unlike with rollback on failure (TanStack Query)
 - [x] Thu: Memoized rows, getItemType, measure with Perf Monitor
-- [ ] Fri: Jest + RNTL tests for pagination and rollback
+- [x] Fri: Jest + RNTL tests for pagination and rollback
 - [ ] Sat: README with FlatList vs FlashList comparison and screen recording
 - [ ] Sun: weekly review in DEVLOG.md

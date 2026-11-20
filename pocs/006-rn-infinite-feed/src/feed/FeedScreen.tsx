@@ -84,6 +84,7 @@ export function FeedScreen({ api, pageSize = 20 }: Props) {
         )}
         <ListProfiler id="feed">
           <FlashList
+            testID="feed-list"
             data={items}
             renderItem={renderItem}
             keyExtractor={keyExtractor}
