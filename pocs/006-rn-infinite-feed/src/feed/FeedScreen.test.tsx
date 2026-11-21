@@ -5,6 +5,7 @@ import type { Post } from '../api/types.ts';
 import { makeSeedPosts } from '../data/seed.ts';
 import { createControlledFeedApi } from '../test/controlledFeedApi.ts';
 import { FeedScreen } from './FeedScreen.tsx';
+import type { ListImpl } from './listImpl.ts';
 
 const PAGE = 3;
 
@@ -13,14 +14,14 @@ function testPosts(count: number): Post[] {
   return makeSeedPosts(count).map((p, i) => ({ ...p, media: null, likedByMe: false, likeCount: (i + 1) * 10 }));
 }
 
-async function renderFeed(count = 5) {
+async function renderFeed(count = 5, listImpl?: ListImpl) {
   const posts = testPosts(count);
   const ctl = createControlledFeedApi(posts);
   // gcTime Infinity: no garbage-collection timers left running after a test, so Jest can exit.
   const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: 0, gcTime: Infinity } } });
   await render(
     <QueryClientProvider client={queryClient}>
-      <FeedScreen api={ctl.api} pageSize={PAGE} />
+      <FeedScreen api={ctl.api} pageSize={PAGE} listImpl={listImpl} />
     </QueryClientProvider>,
   );
   const answer = async (outcome: 'ok' | 'fail' = 'ok') => {
@@ -71,6 +72,26 @@ describe('FeedScreen pagination', () => {
     expect(ctl.pages[2].params.cursor).toBe(cursor);
     await ctl.answer();
     expect(screen.getByText('Feed · 5 posts')).toBeOnTheScreen();
+  });
+});
+
+describe('FeedScreen with FlatList (comparison build)', () => {
+  // The comparison is only fair if both lists run the same screen logic.
+  beforeEach(() => notifyManager.setScheduler(queueMicrotask));
+  afterEach(() => notifyManager.setScheduler((cb) => setTimeout(cb, 0)));
+
+  test('pages to the end and likes a row the same way as FlashList', async () => {
+    const ctl = await renderFeed(5, 'flat');
+    await ctl.answer();
+    expect(screen.getByText('Feed · 3 posts')).toBeOnTheScreen();
+
+    await act(() => fireEvent(screen.getByTestId('feed-list'), 'endReached'));
+    await ctl.answer();
+    expect(screen.getByText('Feed · 5 posts')).toBeOnTheScreen();
+    expect(screen.getByText("You're all caught up.")).toBeOnTheScreen();
+
+    await act(() => fireEvent.press(likeButton(10)));
+    expect(likeButton(11)).toBeOnTheScreen();
   });
 });
 

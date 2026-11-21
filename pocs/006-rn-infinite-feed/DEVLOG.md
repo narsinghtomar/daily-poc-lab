@@ -5,3 +5,4 @@
 - 2026-11-18 (W4 Wed): Add optimistic like and unlike with automatic rollback on failure
 - 2026-11-19 (W4 Thu): Memoize feed rows, split recycling by item type and add render profiling
 - 2026-11-20 (W4 Fri): Add Jest and React Native Testing Library tests for pagination and like rollback
+- 2026-11-21 (W4 Sat): Compare FlatList and FlashList with a list switch and add a demo recording script

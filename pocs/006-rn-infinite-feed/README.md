@@ -28,10 +28,13 @@ Social and marketplace feeds load in pages while new items keep arriving at the 
 - Each row is split into a memoized content block (author, text, photo) and a like button, so a like tap re-renders only the button and the timestamp line
 - `renderItem`, `keyExtractor` and `getItemType` are module-level functions, and one shared `Intl.DateTimeFormat` replaces a `toLocaleString` call per row (which builds a new formatter every time)
 - A dev-only `ListProfiler` wraps the list in React's `Profiler` and logs commit stats (avg, p95, max, commits over the 16.7 ms frame budget) to the Metro console every 50 commits; it renders nothing extra in release builds
+- A build-time switch (`EXPO_PUBLIC_FEED_LIST=flat`) renders the same screen with a tuned `FlatList` instead of FlashList, with the same rows, callbacks, data and profiler, so the two lists can be compared on one device (`src/feed/listImpl.ts`). Unknown values fall back to FlashList, and the profiler logs under `feed:flash` or `feed:flat`
+- `scripts/record-demo.sh` records the demo from an Android device (`adb screenrecord`, with touches shown) or an iOS simulator (`simctl io recordVideo`) and turns it into a small README GIF with ffmpeg
 - Rollback is tested end to end without a device: the real mutation options run on a `QueryClient` against a hand-controlled fake server, covering success, failure, out-of-order taps, and "first tap saved, second failed"
 - Component and hook tests with Jest (`jest-expo` preset) and React Native Testing Library: `useFeed` is driven through `renderHook`, and `FeedScreen` is rendered with the real FlashList and TanStack Query, queried by accessible role and label the way a screen reader sees it
 - The tests use a controlled `FeedApi` (`src/test/controlledFeedApi.ts`): every call stays pending until the test answers or fails it, in any order, while the data still comes from the real mock server, so cursors and like counts are realistic and race conditions are reproducible instead of timing-dependent
 - Pagination tests cover cursor paging to the end, the in-flight guard on repeated `onEndReached`, refresh aborting a pending page, a late page that ignores abort being dropped as stale, failed page with retry on the same cursor, `INVALID_CURSOR` reset, failed refresh keeping the list, and abort on unmount
+- A FlatList test runs the same paging and like flow on the comparison build, so the switch cannot drift from the main screen
 - Rollback tests tap the real like button: the count changes at once, stays after the server confirms, rolls back with a notice on failure (the 3 s notice is checked with fake timers), lands on the saved like when "like" succeeds and the following "unlike" fails, and keeps the optimistic value across a pull to refresh
 
 ## Run
@@ -45,6 +48,8 @@ yarn test       # both suites below, no device or simulator needed
 yarn test:unit  # pure logic: cursor, mock API, feed reducer, like mutation, row model, perf stats (node:test)
 yarn test:ui    # Jest + React Native Testing Library: useFeed pagination and FeedScreen like rollback
 yarn typecheck
+EXPO_PUBLIC_FEED_LIST=flat yarn start   # same feed rendered with FlatList, for the comparison
+yarn record android flash               # or: yarn record ios flat (needs adb or Xcode, plus ffmpeg)
 ```
 
 ## Measuring performance
@@ -55,6 +60,44 @@ Run on a real mid-range Android device in a release-like build (`yarn expo start
 3. Watch for JS FPS dips below 60 and blank cells during fast flings. UI FPS dips point at native layout or images, JS FPS dips point at render work.
 4. Re-run with the dev build and read the `[perf] feed:` lines in the Metro console for the JS side: average and p95 commit time and how many commits went over one frame.
 5. To see the effect of today's changes, compare against a build with `getItemType` removed and `memo(PostRowImpl)` without the comparator: a pull to refresh should then re-render every visible row instead of none.
+
+## FlatList vs FlashList
+
+Both lists virtualize: they only mount rows near the viewport. They differ in what happens to a row that scrolls off screen.
+
+| | FlatList (React Native core) | FlashList v2 (Shopify) |
+|---|---|---|
+| Off-screen rows | Unmounted and later mounted again from scratch (`VirtualizedList`) | Recycled: the cell view is kept and re-rendered with the next item's props |
+| Cost of a new row coming into view | Full mount: create every native view, run effects, lay out | Prop update on an existing tree of the same item type |
+| Blank cells on fast flings | Common when JS cannot mount rows fast enough; tuned with `windowSize`, `maxToRenderPerBatch` | Rare, since recycling is cheap; v2 sizes cells on the new architecture without estimates |
+| Rows kept mounted | About `windowSize` screens (default 21, tuned to 7 here) | A small pool per item type plus a draw buffer |
+| Mixed row layouts | Nothing to configure, every row mounts fresh | `getItemType` keeps separate pools so a text cell is not recycled into a photo cell |
+| Row state | Local state resets naturally on unmount | Local state survives recycling, so rows must derive state from props or reset it on item change |
+| Memoization | Helps, since every re-render of the list touches mounted rows | Matters more, since a recycled row re-renders with new props on every reuse |
+| API | Built in, no dependency | Near drop-in: same `data`, `renderItem`, `keyExtractor`, `onEndReached`, `onRefresh` |
+
+What this means for this feed:
+- The screen code is identical for both lists (`listProps` in `FeedScreen.tsx`); only `getItemType` is FlashList specific and the `FLAT_LIST_TUNING` values are FlatList specific. That is why switching is a one-line change and why the comparison measures the list, not the screen.
+- Pagination, pull to refresh and optimistic likes behave the same on both, and the FlatList test proves it.
+- Rows here hold no local state (the like state is derived from props and pending mutations), which is what makes them safe to recycle. A row with its own `useState` would show the previous item's state after recycling.
+- The FlatList is tuned the way a feed normally would be (smaller window, smaller batches, `removeClippedSubviews`), so it is a fair baseline. Untuned FlatList keeps about 21 screens of rows mounted.
+
+How to compare on a device (release-like build, mid-range Android phone):
+1. `yarn expo start --no-dev --minify`, turn on **Perf Monitor**, fling through all 120 posts and back, note UI and JS FPS and blank cells.
+2. Stop, run `EXPO_PUBLIC_FEED_LIST=flat yarn expo start --no-dev --minify --clear` and repeat the same gestures. `--clear` matters: `EXPO_PUBLIC_` values are inlined at bundle time.
+3. For JS render cost, repeat both runs in a dev build and compare the `[perf] feed:flash` and `[perf] feed:flat` lines in the Metro console (average and p95 commit time, commits over 16.7 ms).
+4. Expect the biggest gap on fast flings through mixed photo and text rows, where FlatList mounts and FlashList recycles. On a short, simple list the two are close, and FlatList's lack of a dependency can be the better trade.
+
+## Screen recording
+Record on a real device or simulator so the clip shows real scrolling, not an emulated web view:
+
+```bash
+EXPO_PUBLIC_FEED_LIST=flash yarn start   # in one terminal
+yarn record android flash                # in another: 25 s clip, touches shown
+SECONDS_TO_RECORD=15 yarn record ios flat
+```
+
+Clips land in `docs/media/` as `feed-<list>-<platform>.mp4` plus a 360 px GIF for embedding. Suggested script for the clip: scroll to "You're all caught up.", pull to refresh to bring in the live posts, like a few rows (one in five fails on purpose and rolls back with the banner). Recording `flash` and `flat` with the same gestures gives a side-by-side for the comparison above.
 
 ## What I'd do in production
 - Back the endpoint with a composite index on `(created_at desc, id desc)` and a `WHERE (created_at, id) < ($1, $2)` row comparison, so each page is an index range scan regardless of depth
@@ -81,6 +124,8 @@ Run on a real mid-range Android device in a release-like build (`yarn expo start
 - Why `liked: boolean` instead of a toggle endpoint: a toggle is not idempotent, so a retry or a duplicated request flips the like back; a desired-state call can be repeated safely
 - What `getItemType` buys: FlashList recycles cells instead of creating new ones; without types, a short text cell can be recycled into a tall photo post and has to rebuild and re-measure its whole subtree mid-scroll
 - Why a custom `memo` comparator: default `memo` compares by reference, and a refresh returns new objects for unchanged posts, so every row re-renders; comparing drawn fields avoids that, at the cost of keeping the comparator in sync with the row
+- FlatList vs FlashList: FlatList unmounts rows that leave the window and mounts new ones; FlashList recycles cells of the same type and only re-renders them with new props, which is cheaper on fast scrolls but means row-local state must be derived from props
+- When FlatList is still fine: short or simple lists, or when avoiding a native dependency matters more than scroll performance
 - Perf Monitor vs Profiler: Perf Monitor tells you frames are dropping and on which thread; the React Profiler tells you which component render work caused it
 - Why a mutation `scope` per post: without it, like then unlike can reach the server out of order and the final state depends on network timing
 - Why a controlled fake instead of mocking `fetch` with delays: the test decides when and in which order each response arrives, so races (late page after refresh, second tap failing) are reproduced every run without sleeps or flakes
@@ -92,5 +137,5 @@ Run on a real mid-range Android device in a release-like build (`yarn expo start
 - [x] Wed: Optimistic like/unlike with rollback on failure (TanStack Query)
 - [x] Thu: Memoized rows, getItemType, measure with Perf Monitor
 - [x] Fri: Jest + RNTL tests for pagination and rollback
-- [ ] Sat: README with FlatList vs FlashList comparison and screen recording
+- [x] Sat: README with FlatList vs FlashList comparison and screen recording
 - [ ] Sun: weekly review in DEVLOG.md

@@ -1,19 +1,26 @@
-import { FlashList, type ListRenderItem } from '@shopify/flash-list';
+import { FlashList } from '@shopify/flash-list';
 import { useMutationState } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { FeedApi, FeedApiErrorCode, Post } from '../api/types.ts';
 import { LikeProvider } from '../likes/LikeContext.tsx';
 import { applyPendingLikes, LIKE_MUTATION_KEY, type LikeMutationDeps, type LikeVars } from '../likes/likeMutation.ts';
 import { ListProfiler } from '../perf/ListProfiler.tsx';
+import { DEFAULT_LIST_IMPL, FLAT_LIST_TUNING, type ListImpl } from './listImpl.ts';
 import { PostRow } from './PostRow.tsx';
 import { getPostItemType } from './rowModel.ts';
 import { useFeed } from './useFeed.ts';
 
-type Props = { api: FeedApi; pageSize?: number };
+type Props = {
+  api: FeedApi;
+  pageSize?: number;
+  /** FlashList by default; FlatList only to compare the two on a device. */
+  listImpl?: ListImpl;
+};
 
 const keyExtractor = (post: Post) => post.id;
-const renderItem: ListRenderItem<Post> = ({ item }) => <PostRow post={item} />;
+// Same row component and callbacks for both lists, so a comparison measures the list only.
+const renderItem = ({ item }: { item: Post }) => <PostRow post={item} />;
 // Module level so FlashList gets the same functions on every render.
 const getItemType = (post: Post) => getPostItemType(post);
 
@@ -21,7 +28,7 @@ const getItemType = (post: Post) => getPostItemType(post);
  * Virtualized feed. Pages load as the user nears the end of the list
  * (onEndReached) and pull to refresh fetches the newest first page.
  */
-export function FeedScreen({ api, pageSize = 20 }: Props) {
+export function FeedScreen({ api, pageSize = 20, listImpl = DEFAULT_LIST_IMPL }: Props) {
   const feed = useFeed(api, pageSize);
   const { items: confirmedItems, loading, error, hasMore, loadMore, refresh, retry, confirmLike } = feed;
 
@@ -66,6 +73,19 @@ export function FeedScreen({ api, pageSize = 20 }: Props) {
     return <Text style={[styles.empty, styles.muted]}>No posts yet.</Text>;
   }, [loading, error, retry]);
 
+  const listProps = {
+    testID: 'feed-list',
+    data: items,
+    renderItem,
+    keyExtractor,
+    onEndReached: loadMore,
+    onEndReachedThreshold: 0.5,
+    refreshing: loading === 'refresh',
+    onRefresh: refresh,
+    ListFooterComponent: footer,
+    ListEmptyComponent: empty,
+  };
+
   return (
     <LikeProvider value={likeDeps}>
       <View style={styles.container}>
@@ -82,20 +102,12 @@ export function FeedScreen({ api, pageSize = 20 }: Props) {
             Couldn't save your like. It has been undone.
           </Text>
         )}
-        <ListProfiler id="feed">
-          <FlashList
-            testID="feed-list"
-            data={items}
-            renderItem={renderItem}
-            keyExtractor={keyExtractor}
-            getItemType={getItemType}
-            onEndReached={loadMore}
-            onEndReachedThreshold={0.5}
-            refreshing={loading === 'refresh'}
-            onRefresh={refresh}
-            ListFooterComponent={footer}
-            ListEmptyComponent={empty}
-          />
+        <ListProfiler id={`feed:${listImpl}`}>
+          {listImpl === 'flat' ? (
+            <FlatList {...listProps} {...FLAT_LIST_TUNING} />
+          ) : (
+            <FlashList {...listProps} getItemType={getItemType} />
+          )}
         </ListProfiler>
       </View>
     </LikeProvider>

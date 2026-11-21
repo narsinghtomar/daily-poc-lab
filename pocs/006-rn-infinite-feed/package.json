@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "yarn test:unit && yarn test:ui",
     "test:unit": "node --experimental-strip-types --test 'src/**/*.test.ts'",
-    "test:ui": "jest"
+    "test:ui": "jest",
+    "record": "scripts/record-demo.sh"
   },
   "dependencies": {
     "@shopify/flash-list": "^2.3.3",
